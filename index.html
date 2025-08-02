@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador de Atendimento ao Cliente</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Estilos para a animação do modal e do indicador de digitação */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
         @keyframes fade-in-up {
             from {
                 opacity: 0;
@@ -48,7 +53,46 @@
 </head>
 <body class="bg-gray-800 flex items-center justify-center min-h-screen font-sans p-4">
 
-    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col h-[90vh] relative overflow-hidden">
+    <div id="intro-container" class="w-full max-w-lg text-center animate-fade-in-up">
+        <h1 class="text-4xl font-extrabold text-white">Simulador de Atendimento Bling</h1>
+        <h2 class="text-xl text-green-400 font-medium mt-2 mb-8">Treinamento para Escala de Telefone</h2>
+        
+        <div id="start-screen" class="bg-white rounded-2xl shadow-2xl flex flex-col">
+            <div class="p-8 text-left">
+                <ul class="space-y-4">
+                    <li class="flex items-start">
+                        <div class="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-4 mt-1">
+                            <svg class="w-4 h-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
+                        </div>
+                        <p class="text-gray-600 text-sm">Este é um simulador interativo para treinar novos colaboradores no fluxo ideal de um atendimento.</p>
+                    </li>
+                    <li class="flex items-start">
+                        <div class="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-4 mt-1">
+                            <svg class="w-4 h-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9a9 9 0 1 1 9 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 9.75h.008v.008H6.75V9.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+                        </div>
+                        <p class="text-gray-600 text-sm">O objetivo é alcançar a pontuação máxima de <strong>100 pontos</strong>, acertando todos os passos do procedimento.</p>
+                    </li>
+                    <li class="flex items-start">
+                        <div class="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-4 mt-1">
+                             <svg class="w-4 h-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 11.667 0l3.181-3.183m-4.991-2.69-3.182-3.182a8.25 8.25 0 0 0-11.667 0L2.985 16.65l3.182 3.182" /></svg>
+                        </div>
+                        <p class="text-gray-600 text-sm">Se não conseguir de primeira, reinicie a simulação e tente novamente até dominar o fluxo. Bom treinamento!</p>
+                    </li>
+                </ul>
+            </div>
+            <div class="p-6 border-t border-gray-100">
+                 <button id="start-button" class="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 transition-colors duration-300 shadow-lg text-lg">
+                    Iniciar Simulação
+                </button>
+                <div class="text-xs text-gray-400 mt-4 text-center">
+                    <p>Versão 1.00</p>
+                    <p>Desenvolvido por: <a href="https://github.com/isaacmarquetti" target="_blank" class="text-green-600 hover:underline">Isaac Marquetti</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col h-[90vh] relative overflow-hidden hidden">
         
         <header class="bg-green-700 text-white p-4 rounded-t-2xl shadow-md text-center z-0">
             <h1 class="text-xl font-bold">Simulador de Atendimento Bling</h1>
@@ -240,7 +284,16 @@
                     { sender: 'atendente', text: 'Bom dia!' }
                 ]
               },
-              { text: "Sem problemas, tenha um bom dia.", correct: false },
+              { 
+                  id: 'end_call_abruptly',
+                  text: "Sem problemas, tenha um bom dia.", 
+                  correct: false,
+                  endsGame: true,
+                  followUp: [
+                      { sender: 'cliente', text: 'Bom dia.' },
+                      { sender: 'sistema', text: '[O cliente desligou]' }
+                  ]
+              },
             ],
             nextStep: 'closing',
           },
@@ -250,26 +303,30 @@
             points: 10,
             customerResponse: "Não, era só isso mesmo.",
             options: [
-              { text: "Então eu vou pedir uma gentileza, ao final da ligação, você poderia avaliar meu atendimento?", correct: true },
-              { id: 'hang_up', text: "[Desligar a ligação]", correct: false },
+              { 
+                text: "Então eu vou pedir uma gentileza, ao final da ligação, você poderia avaliar meu atendimento?", 
+                correct: true,
+                followUp: [
+                    { sender: 'cliente', text: 'Com certeza, avaliarei sim. Tenha um ótimo dia!'},
+                    { sender: 'atendente', text: 'Obrigado e um ótimo dia para você também, até!'}
+                ],
+                endsGame: true
+              },
               { 
                 id: 'end_call_casually', 
-                text: "Ok, até a próxima!", 
+                text: "Vou pedir uma gentileza, você poderia fazer um comentário sobre o meu atendimento no ticket que eu vou registrar da nossa ligação, pode ser?", 
                 correct: false, 
                 endsGame: true,
                 followUp: [
-                    { sender: 'cliente', text: 'Até mais!' }, 
-                    { sender: 'sistema', text: '[O cliente desligou]' }
+                    { sender: 'cliente', text: 'Claro pode deixar, tenha um bom dia.' }, 
+                    { sender: 'atendente', text: 'Desde já agradeço e bom dia para você também.' }
                 ]
               },
-              { text: "Tudo bem então.", correct: false },
-              { text: "Não se esqueça de nós!", correct: false },
+              { id: 'hang_up', text: "[Desligar a ligação]", correct: false, endsGame: true },
             ],
             nextStep: 'end',
           },
-          end: {
-            customerResponse: "Com certeza, avaliarei sim. Tenha um ótimo dia!",
-          },
+          end: {},
         };
 
         const participants = {
@@ -438,7 +495,7 @@
             container.appendChild(restartButton);
             return container;
         }
-
+        
         function createFeedbackLoader() {
             const element = document.createElement('div');
             element.className = 'flex flex-col items-center justify-center text-center text-gray-500 py-8';
@@ -654,8 +711,16 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            gameState = getInitialState();
-            renderChat();
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const startButton = document.getElementById('start-button');
+            
+            startButton.addEventListener('click', () => {
+                document.getElementById('intro-container').classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+                gameState = getInitialState();
+                renderChat();
+            });
         });
 
     </script>
