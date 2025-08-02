@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Atendimento ao Cliente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos para a animação do modal e do indicador de digitação */
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.5s ease-out forwards;
+        }
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(-25%);
+                animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+            }
+            50% {
+                transform: translateY(0);
+                animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+            }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-800 flex items-center justify-center min-h-screen font-sans p-4">
+
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col h-[90vh] relative overflow-hidden">
+        
+        <header class="bg-green-700 text-white p-4 rounded-t-2xl shadow-md text-center z-0">
+            <h1 class="text-xl font-bold">Simulador de Atendimento Bling</h1>
+            <p class="text-sm opacity-90">Treinamento para Escala de Telefone</p>
+        </header>
+
+        <div id="chat-container" class="flex-1 p-4 overflow-y-auto bg-gray-50">
+            <div id="messages-list" class="flex flex-col space-y-2">
+                <!-- As mensagens do chat serão inseridas aqui via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Estrutura de Dados e Configuração ---
+        const gameFlow = {
+          start: {
+            feedbackKey: 'opening',
+            feedbackText: 'Saudação, apresentação e perguntar o nome do cliente',
+            points: 20,
+            options: [
+              { text: "Olá, bom dia! Me chamo [Atendente Bling]. Com quem eu estou falando, por gentileza?", correct: true },
+              { text: "Olá bom dia. Como posso auxiliar?", correct: false },
+              { text: "Alô, quem fala?", correct: false },
+              { text: "Bom dia. Me chamo [Atendente Bling]. Como posso ajudar?", correct: false },
+              { text: "Bom dia! Atendimento Bling, qual sua dúvida?", correct: false },
+            ],
+            customerResponse: [
+                "Olá, Bom dia! Meu nome é Cristiano Ronaldo.",
+                "Preciso de auxílio, pois não estou entendendo como fazer a exportação de produtos para a Shopee.",
+                "Percebi que o botão ‘Exportar produtos multiloja’ está inativo e não consigo realizar a exportação."
+            ],
+            nextStep: 'ask_document',
+          },
+          ask_document: {
+            feedbackKey: 'previous_contact',
+            feedbackText: 'Perguntou se o cliente já entrou em contato anteriormente',
+            points: 10,
+            options: [
+              { 
+                text: "Certo, é o seu primeiro contato ou você já abriu um ticket sobre esse mesmo assunto?", 
+                correct: true,
+                followUp: [
+                    { sender: 'cliente', text: "É o primeiro contato." },
+                    { sender: 'atendente', text: "Certo. Pelo CNPJ que você digitou na central, localizei a empresa Robozão Tech Ltda, é isso?" },
+                    { sender: 'cliente', text: "Perfeito, esse mesmo." }
+                ]
+              },
+              { 
+                id: 'shortcut_solution_2',
+                text: "Certo com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
+                correct: true, 
+                followUp: [] 
+              },
+              { 
+                id: 'deflect_to_shopee_very_early',
+                text: "Pelo que você está me relatando, deve haver algum problema de comunicação com a Shopee e, portanto, você deverá entrar em contato com eles para mais detalhes sobre essa questão.", 
+                correct: false,
+                followUp: [ 
+                    { sender: 'cliente', text: "Ah, entendi. Vou fazer isso então..." },
+                    { sender: 'cliente', text: "Agradeço." }
+                ]
+              },
+            ],
+            nextStep: 'inform_registration',
+          },
+          inform_registration: {
+            feedbackKey: 'registration_procedure',
+            feedbackText: 'Registrou o atendimento',
+            points: 10,
+            options: [
+                { 
+                    text: "Só um momento enquanto eu registro nosso atendimento, ok?", 
+                    correct: true,
+                    followUp: [ { sender: 'cliente', text: "Tudo bem, fico no aguardo." } ]
+                },
+                { 
+                    id: 'shortcut_solution_4',
+                    text: "Certo com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
+                    correct: true, 
+                    followUp: [] 
+                },
+                { 
+                    id: 'deflect_to_shopee_early',
+                    text: "Pelo que você está me relatando, deve haver algum problema de comunicação com a Shopee e, portanto, você deverá entrar em contato com eles para mais detalhes sobre essa questão.", 
+                    correct: false,
+                    followUp: [ 
+                        { sender: 'cliente', text: "Ah, entendi. Vou fazer isso então..." },
+                        { sender: 'cliente', text: "Agradeço." }
+                    ]
+                },
+            ],
+            nextStep: 'provide_ticket_number',
+          },
+          provide_ticket_number: {
+            feedbackKey: 'ticket_provision',
+            feedbackText: 'Informou o número do ticket',
+            points: 10,
+            options: [
+                { 
+                    text: "O número do ticket do nosso atendimento é 480990. O registro desse atendimento também estará disponível em ‘Meus Tickets’ na Central de Ajuda", 
+                    correct: true,
+                    followUp: [
+                        { sender: 'cliente', text: "Ah ok, vou anotar aqui, só um momento." },
+                        { sender: 'cliente', text: "Certo, anotado." }
+                    ]
+                },
+                { text: "Seu ticket é 480990.", correct: false },
+                { text: "Anote o protocolo: 480990.", correct: false },
+                { 
+                    text: "Registrei seu atendimento. O número do ticket foi enviado para o seu e-mail que está cadastrado no sistema onde você receberá atualizações do ticket por lá, ok?", 
+                    correct: false,
+                    followUp: [ { sender: 'cliente', text: "Ok." } ]
+                },
+            ],
+            nextStep: 'ask_about_call_drop',
+          },
+          ask_about_call_drop: {
+            feedbackKey: 'call_drop_procedure',
+            feedbackText: 'Avisou sobre o procedimento em caso de queda da ligação',
+            points: 10,
+            options: [
+                { 
+                    text: "E caso a nossa ligação cair, eu te retorno por ligação mesmo, ok?", 
+                    correct: true,
+                    followUp: [
+                        { sender: 'cliente', text: "Ah que bom, combinado então." },
+                        { sender: 'atendente', text: "Sobre a solução..."}
+                    ]
+                },
+                { 
+                    id: 'shortcut_solution_3',
+                    text: "Certo com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
+                    correct: true, 
+                    followUp: [] 
+                },
+                { text: "Podemos continuar por aqui ou prefere que eu te chame no WhatsApp?", correct: false },
+                { text: "Vou te passar o número do protocolo, anote por favor.", correct: false },
+                { text: "Se a ligação cair, por favor, retorne o contato e informe meu nome.", correct: false },
+            ],
+            nextStep: 'give_solution',
+          },
+          give_solution: {
+            feedbackKey: 'solution',
+            feedbackText: 'Fornecimento da solução correta',
+            points: 20,
+            options: [
+                { text: "O procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", correct: true },
+                { text: "Certo, primeiro você precisa verificar se o seu plano Bling inclui integração com a Shopee.", correct: false },
+                { text: "Vou abrir um chamado para a equipe técnica verificar sua conta. Pode levar até 24 horas.", correct: false },
+                { 
+                    id: 'deflect_to_shopee',
+                    text: "O problema pode ser na Shopee. Você já tentou contato com o suporte deles?", 
+                    correct: false,
+                    followUp: [
+                        { sender: 'cliente', text: "Ainda não, vou ligar para eles então para saber o que está acontecendo." },
+                        { sender: 'cliente', text: "Agradeço." }
+                    ]
+                },
+                { text: "Por favor, deslogue e logue novamente no sistema para resolver o problema.", correct: false },
+            ],
+            nextStep: 'solve_problem',
+          },
+          solve_problem: {
+            feedbackKey: 'additionalHelp',
+            feedbackText: 'Oferta de ajuda adicional',
+            points: 10,
+            customerResponse: "Nossa, era só isso? Consegui aqui! Muito obrigado pela ajuda, foi ótimo!",
+            options: [
+              { text: "De nada! Posso te ajudar em algo mais ou seria somente isso?", correct: true },
+              { 
+                id: 'end_call_politely',
+                text: "Precisando é só ligar para nossa Central, tenha um ótimo dia!", 
+                correct: false, 
+                endsGame: true,
+                followUp: [
+                    { sender: 'cliente', text: 'Bom dia para você também!' }, 
+                    { sender: 'sistema', text: '[O cliente desligou]' }
+                ]
+              },
+              { 
+                id: 'end_call_simply',
+                text: "Disponha. Era um problema bem simples mesmo.", 
+                correct: false,
+                endsGame: true,
+                followUp: [
+                    { sender: 'cliente', text: 'Verdade, ainda bem!' }, 
+                    { sender: 'cliente', text: 'Agradeço a atenção, tenha um bom dia.' }, 
+                    { sender: 'atendente', text: 'Bom dia!' }
+                ]
+              },
+              { text: "Sem problemas, tenha um bom dia.", correct: false },
+            ],
+            nextStep: 'closing',
+          },
+          closing: {
+            feedbackKey: 'evaluation',
+            feedbackText: 'Pedido de avaliação do atendimento',
+            points: 10,
+            customerResponse: "Não, era só isso mesmo.",
+            options: [
+              { text: "Então eu vou pedir uma gentileza, ao final da ligação, você poderia avaliar meu atendimento?", correct: true },
+              { id: 'hang_up', text: "[Desligar a ligação]", correct: false },
+              { 
+                id: 'end_call_casually', 
+                text: "Ok, até a próxima!", 
+                correct: false, 
+                endsGame: true,
+                followUp: [
+                    { sender: 'cliente', text: 'Até mais!' }, 
+                    { sender: 'sistema', text: '[O cliente desligou]' }
+                ]
+              },
+              { text: "Tudo bem então.", correct: false },
+              { text: "Não se esqueça de nós!", correct: false },
+            ],
+            nextStep: 'end',
+          },
+          end: {
+            customerResponse: "Com certeza, avaliarei sim. Tenha um ótimo dia!",
+          },
+        };
+
+        const participants = {
+          cliente: { name: 'Cliente', avatar: '👤' },
+          atendente: { name: 'Atendente Bling', avatar: '🎧' },
+        };
+
+        // --- Lógica do Jogo (Vanilla JavaScript) ---
+
+        const messagesList = document.getElementById('messages-list');
+        const chatContainer = document.getElementById('chat-container');
+        let gameState = {};
+
+        function getInitialState() {
+            return {
+                conversation: [{ sender: 'sistema', text: 'Cliente na fila de espera...' }, { sender: 'cliente', text: 'Ring... Ring... Ring...' }],
+                gameStep: 'start',
+                score: 0,
+                isChoosing: true,
+                gameEnded: false,
+                feedback: {},
+                typingSender: null,
+                showFeedbackModal: false,
+                isGeneratingFeedback: false,
+            };
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function renderChat() {
+            messagesList.innerHTML = ''; 
+
+            gameState.conversation.forEach(msg => {
+                let messageEl;
+                if (msg.sender === 'sistema') {
+                    messageEl = createSystemMessage(msg);
+                } else {
+                    messageEl = createChatMessage(msg);
+                }
+                messagesList.appendChild(messageEl);
+            });
+
+            if (gameState.typingSender) {
+                messagesList.appendChild(createTypingIndicator(gameState.typingSender));
+            }
+
+            if (gameState.isChoosing && !gameState.gameEnded) {
+                const currentOptions = gameFlow[gameState.gameStep].options;
+                messagesList.appendChild(createResponseOptions(currentOptions));
+            }
+            
+            const existingModal = document.getElementById('feedback-modal');
+            if (existingModal) existingModal.remove();
+            
+            if (gameState.gameEnded && gameState.showFeedbackModal) {
+                document.body.appendChild(createFeedbackModal());
+            }
+            
+            if (gameState.gameEnded && !gameState.showFeedbackModal && !gameState.isGeneratingFeedback) {
+                 messagesList.appendChild(createPostGameControls());
+            }
+
+            if (gameState.isGeneratingFeedback) {
+                messagesList.appendChild(createFeedbackLoader());
+            }
+
+            scrollToBottom();
+        }
+
+        function createChatMessage(message) {
+            const { sender, text } = message;
+            const participant = participants[sender];
+            const isAgent = sender === 'atendente';
+            const textWithLineBreaks = text.replace(/\n/g, '<br>');
+
+            const element = document.createElement('div');
+            element.className = `flex items-end gap-2 my-2 ${isAgent ? 'flex-row-reverse' : 'flex-row'}`;
+            element.innerHTML = `
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-2xl">
+                    ${participant.avatar}
+                </div>
+                <div class="flex flex-col" style="max-width: 70%;">
+                    <span class="text-xs text-gray-500 mb-1 ${isAgent ? 'self-end' : 'self-start'}">
+                        ${participant.name}
+                    </span>
+                    <div class="w-fit rounded-2xl px-4 py-3 shadow-md ${isAgent ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}">
+                        <p class="text-sm leading-relaxed">${textWithLineBreaks}</p>
+                    </div>
+                </div>
+            `;
+            return element;
+        }
+
+        function createSystemMessage(message) {
+            const element = document.createElement('div');
+            element.className = 'text-center text-xs text-gray-500 py-2 italic';
+            element.textContent = message.text;
+            return element;
+        }
+
+        function createTypingIndicator(sender) {
+            const participant = participants[sender];
+            const isAgent = sender === 'atendente';
+            const element = document.createElement('div');
+            element.className = `flex items-end gap-2 my-2 ${isAgent ? 'flex-row-reverse' : 'flex-row'}`;
+            element.innerHTML = `
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-2xl">
+                    ${participant.avatar}
+                </div>
+                <div class="flex flex-col" style="max-width: 70%;">
+                    <span class="text-xs text-gray-500 mb-1 ${isAgent ? 'self-end' : 'self-start'}">
+                        ${participant.name}
+                    </span>
+                    <div class="w-fit rounded-2xl px-4 py-3 shadow-md bg-gray-200">
+                        <div class="flex items-center space-x-1.5">
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: -0.3s;"></div>
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: -0.15s;"></div>
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return element;
+        }
+
+        function createResponseOptions(options) {
+            const container = document.createElement('div');
+            container.className = 'self-center w-full pt-4';
+            container.innerHTML = `<h3 class="text-center text-sm font-semibold text-gray-600 mb-3">Escolha a sua resposta:</h3>`;
+            
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 gap-2';
+
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left bg-white border border-green-600 text-green-700 px-3 py-2 rounded-lg hover:bg-green-600 hover:text-white transition-all duration-300 text-sm shadow';
+                button.innerHTML = option.text.replace(/\n/g, '<br>');
+                button.onclick = () => handleOptionSelect(option);
+                grid.appendChild(button);
+            });
+
+            container.appendChild(grid);
+            return container;
+        }
+
+        function createPostGameControls() {
+            const container = document.createElement('div');
+            container.className = 'w-full pt-8 pb-4 text-center flex flex-col sm:flex-row gap-4';
+
+            const backButton = document.createElement('button');
+            backButton.className = 'w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300';
+            backButton.textContent = 'Voltar para a Nota';
+            backButton.onclick = () => {
+                gameState.showFeedbackModal = true;
+                renderChat();
+            };
+
+            const restartButton = document.createElement('button');
+            restartButton.className = 'w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 shadow-lg';
+            restartButton.textContent = 'Simular Novamente';
+            restartButton.onclick = handleRestart;
+
+            container.appendChild(backButton);
+            container.appendChild(restartButton);
+            return container;
+        }
+
+        function createFeedbackLoader() {
+            const element = document.createElement('div');
+            element.className = 'flex flex-col items-center justify-center text-center text-gray-500 py-8';
+            element.innerHTML = `
+                <svg class="animate-spin h-8 w-8 text-green-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-sm italic">Gerando resultado do atendimento...</p>
+            `;
+            return element;
+        }
+        
+        function createFeedbackModal() {
+            const feedbackPoints = Object.values(gameFlow).filter(step => step.feedbackKey);
+            let totalScore = 0;
+            let maxScore = 0;
+
+            feedbackPoints.forEach(point => {
+                maxScore += point.points || 0;
+                if (gameState.feedback[point.feedbackKey] === true) {
+                    totalScore += point.points || 0;
+                }
+            });
+
+            const finalScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+            let scoreColorClass = 'bg-red-500';
+            if (finalScore >= 80) {
+                scoreColorClass = 'bg-green-500';
+            } else if (finalScore >= 50) {
+                scoreColorClass = 'bg-yellow-500';
+            }
+
+            const modalWrapper = document.createElement('div');
+            modalWrapper.id = 'feedback-modal';
+            modalWrapper.className = 'absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-10';
+            
+            let feedbackHTML = '';
+            feedbackPoints.forEach(point => {
+                const icon = gameState.feedback[point.feedbackKey] === true ? '✔️' : '❌';
+                feedbackHTML += `
+                    <li class="flex items-center">
+                        <span class="mr-3 text-xl">${icon}</span>
+                        <span class="text-gray-700 text-sm">${point.feedbackText}</span>
+                    </li>
+                `;
+            });
+
+            modalWrapper.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg text-center animate-fade-in-up">
+                    <h2 class="text-2xl font-bold text-gray-800">Fim da Simulação!</h2>
+                    <div class="my-4">
+                        <div class="mx-auto w-28 h-28 rounded-full flex items-center justify-center text-white font-bold text-5xl ${scoreColorClass}">
+                            ${finalScore}
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 my-4"></div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Resumo do Atendimento:</h3>
+                    <ul class="space-y-2 text-left">${feedbackHTML}</ul>
+                    <div class="flex gap-4 mt-6">
+                        <button id="review-button" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
+                            Rever Atendimento
+                        </button>
+                        <button id="restart-button" class="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 shadow-lg">
+                            Simular Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modalWrapper.querySelector('#restart-button').onclick = handleRestart;
+            modalWrapper.querySelector('#review-button').onclick = () => {
+                gameState.showFeedbackModal = false;
+                renderChat();
+            };
+            return modalWrapper;
+        }
+
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function handleEndOfGame() {
+            gameState.gameEnded = true;
+            gameState.isGeneratingFeedback = true;
+            renderChat();
+            await sleep(3000); 
+            gameState.isGeneratingFeedback = false;
+            gameState.showFeedbackModal = true;
+            renderChat();
+        }
+
+        async function handleOptionSelect(selectedOption) {
+            if (!gameState.isChoosing) return;
+
+            const currentFlow = gameFlow[gameState.gameStep];
+            
+            if (currentFlow.feedbackKey) {
+                if (selectedOption.id === 'shortcut_solution_2') {
+                    gameState.feedback.previous_contact = false;
+                    gameState.feedback.solution = true;
+                } else if (selectedOption.id === 'shortcut_solution_3') {
+                    gameState.feedback.call_drop_procedure = false;
+                    gameState.feedback.solution = true;
+                } else if (selectedOption.id === 'shortcut_solution_4') {
+                    gameState.feedback.registration_procedure = false;
+                    gameState.feedback.ticket_provision = false;
+                    gameState.feedback.call_drop_procedure = false;
+                    gameState.feedback.solution = true;
+                }
+                else if (selectedOption.id === 'hang_up') {
+                    gameState.feedback.evaluation = false;
+                }
+                else {
+                    gameState.feedback[currentFlow.feedbackKey] = selectedOption.correct;
+                }
+            }
+            
+            if (selectedOption.correct) {
+                const points = selectedOption.id && selectedOption.id.includes('shortcut') ? gameFlow.give_solution.points : currentFlow.points || 0;
+                gameState.score = (gameState.score || 0) + points;
+            }
+
+            gameState.conversation.push({ sender: 'atendente', text: selectedOption.text });
+            gameState.isChoosing = false;
+            renderChat();
+            
+            if (selectedOption.endsGame) {
+                if (selectedOption.followUp?.length > 0) {
+                    for (const message of selectedOption.followUp) {
+                         if (participants[message.sender]) {
+                            gameState.typingSender = message.sender;
+                            renderChat();
+                            await sleep(1200);
+                            gameState.typingSender = null;
+                        }
+                        gameState.conversation.push(message);
+                        renderChat();
+                        await sleep(400);
+                    }
+                }
+                await handleEndOfGame();
+                return;
+            }
+            
+            await sleep(500);
+
+            let nextStepKey;
+            if (gameState.gameStep === 'ask_document') {
+                nextStepKey = selectedOption.id === 'shortcut_solution_2' ? 'solve_problem' : (selectedOption.correct ? 'inform_registration' : currentFlow.nextStep);
+            } else if (gameState.gameStep === 'inform_registration') {
+                if (selectedOption.id === 'deflect_to_shopee_early') {
+                    nextStepKey = 'solve_problem';
+                } else {
+                    nextStepKey = selectedOption.id === 'shortcut_solution_4' ? 'solve_problem' : (selectedOption.correct ? 'provide_ticket_number' : currentFlow.nextStep);
+                }
+            } else if (gameState.gameStep === 'ask_about_call_drop' && selectedOption.correct) {
+                 nextStepKey = selectedOption.id === 'shortcut_solution_3' ? 'solve_problem' : 'give_solution';
+            }
+            else {
+                nextStepKey = currentFlow.nextStep;
+            }
+            
+            const nextStepFlow = gameFlow[nextStepKey];
+            const messageQueue = [];
+
+            if (selectedOption.followUp?.length > 0) {
+                messageQueue.push(...selectedOption.followUp);
+            }
+            
+            if (gameState.gameStep === 'start' && currentFlow.customerResponse) {
+                const responses = Array.isArray(currentFlow.customerResponse) ? currentFlow.customerResponse : [currentFlow.customerResponse];
+                responses.forEach(responseText => {
+                    messageQueue.push({ sender: 'cliente', text: responseText });
+                });
+            } else if (selectedOption.id === 'deflect_to_shopee' || selectedOption.id === 'deflect_to_shopee_early' || selectedOption.id === 'deflect_to_shopee_very_early') {
+                nextStepKey = 'solve_problem';
+            } else if (gameState.gameStep === 'give_solution' || selectedOption.id?.includes('shortcut')) {
+                messageQueue.push({ sender: 'cliente', text: gameFlow.solve_problem.customerResponse });
+            } else if (gameState.gameStep === 'ask_document' && !selectedOption.correct) {
+                 messageQueue.push({ sender: 'cliente', text: gameFlow.solve_problem.customerResponse });
+            }
+            else if (gameState.gameStep !== 'ask_document' && nextStepFlow?.customerResponse) {
+                messageQueue.push({ sender: 'cliente', text: nextStepFlow.customerResponse });
+            }
+
+            for (const message of messageQueue) {
+                if (participants[message.sender]) {
+                    gameState.typingSender = message.sender;
+                    renderChat();
+                    await sleep(1800 + Math.random() * 800); 
+                    gameState.typingSender = null;
+                }
+                gameState.conversation.push(message);
+                renderChat();
+                await sleep(800); 
+            }
+
+            if (nextStepFlow) {
+                gameState.gameStep = nextStepKey;
+                gameState.isChoosing = !!nextStepFlow.options;
+                gameState.gameEnded = !nextStepFlow.options;
+                renderChat();
+                if(gameState.gameEnded){
+                    await handleEndOfGame();
+                }
+            } else {
+                await handleEndOfGame();
+            }
+        }
+
+        function handleRestart() {
+            gameState = getInitialState();
+            renderChat();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            gameState = getInitialState();
+            renderChat();
+        });
+
+    </script>
+</body>
+</html>
+
