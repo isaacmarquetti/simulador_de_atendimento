@@ -85,7 +85,7 @@
                     Iniciar Simulação
                 </button>
                 <div class="text-xs text-gray-400 mt-4 text-center">
-                    <p>Versão 1.00</p>
+                    <p>Versão 1.02</p>
                     <p>Desenvolvido por: <a href="https://github.com/isaacmarquetti" target="_blank" class="text-green-600 hover:underline">Isaac Marquetti</a></p>
                 </div>
             </div>
@@ -137,13 +137,13 @@
                 correct: true,
                 followUp: [
                     { sender: 'cliente', text: "É o primeiro contato." },
-                    { sender: 'atendente', text: "Certo. Pelo CNPJ que você digitou na central, localizei a empresa Robozão Tech Ltda, é isso?" },
+                    { sender: 'atendente', text: "Pelo CNPJ que você digitou na central, localizei a empresa Robozão Tech Ltda, é isso?" },
                     { sender: 'cliente', text: "Perfeito, esse mesmo." }
                 ]
               },
               { 
                 id: 'shortcut_solution_2',
-                text: "Certo com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
+                text: "Certo, com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
                 correct: true, 
                 followUp: [] 
               },
@@ -171,7 +171,7 @@
                 },
                 { 
                     id: 'shortcut_solution_4',
-                    text: "Certo com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
+                    text: "Certo, com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
                     correct: true, 
                     followUp: [] 
                 },
@@ -193,7 +193,7 @@
             points: 10,
             options: [
                 { 
-                    text: "O número do ticket do nosso atendimento é 480990. O registro desse atendimento também estará disponível em ‘Meus Tickets’ na Central de Ajuda", 
+                    text: "O número do ticket do nosso atendimento é 480990. O registro desse atendimento também estará disponível em ‘Meus Tickets’ na Central de Ajuda.", 
                     correct: true,
                     followUp: [
                         { sender: 'cliente', text: "Ah ok, vou anotar aqui, só um momento." },
@@ -216,7 +216,7 @@
           },
           ask_about_call_drop: {
             feedbackKey: 'call_drop_procedure',
-            feedbackText: 'Avisou sobre o procedimento em caso de queda da ligação',
+            feedbackText: 'Orientou corretamente em caso de queda de ligação',
             points: 10,
             options: [
                 { 
@@ -229,7 +229,7 @@
                 },
                 { 
                     id: 'shortcut_solution_3',
-                    text: "Certo com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
+                    text: "Certo, com relação a solução, o procedimento é simples: em Cadastros > Produtos, ao selecionar algum item que você deseja exportar, o botão 'Exportar produtos multiloja' ficará ativo para que você realize o processo de exportação.", 
                     correct: true, 
                     followUp: [] 
                 },
@@ -476,8 +476,11 @@
             
             const grid = document.createElement('div');
             grid.className = 'grid grid-cols-1 gap-2';
+            
+            // Embaralhar as opções
+            const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
 
-            options.forEach(option => {
+            shuffledOptions.forEach(option => {
                 const button = document.createElement('button');
                 button.className = 'w-full text-left bg-white border border-green-600 text-green-700 px-3 py-2 rounded-lg hover:bg-green-600 hover:text-white transition-all duration-300 text-sm shadow';
                 button.innerHTML = option.text.replace(/\n/g, '<br>');
