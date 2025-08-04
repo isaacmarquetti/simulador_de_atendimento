@@ -1,4 +1,4 @@
-# Simulador de Atendimento - Versão 1.01
+# Simulador de Atendimento - Versão 1.02
 
 Este projeto é um simulador de atendimento telefônico interativo, criado em HTML, CSS e JavaScript puro, projetado para treinar novos colaboradores em um fluxo de chamada de suporte.
 
@@ -16,21 +16,28 @@ O objetivo é atingir **100 pontos**, seguindo todos os procedimentos corretamen
 
 ## 📜 Histórico de Versões
 
-### **v1.01** - (Data da última atualização)
+### **v1.02** - (03/08/2025)
 * **UI/UX:**
-    * Criação de uma nova tela inicial com design mais moderno e elegante.
-    * Ajustes de layout e tipografia na tela inicial e no modal de feedback para melhor legibilidade.
+    * Refinamento do design da tela inicial, com ajuste de fontes, ícones e espaçamentos para uma aparência mais elegante.
+    * Ajustes de layout no modal de feedback para melhor legibilidade.
+* **Fluxo de Conversa:**
+    * Adição de novas ramificações de diálogo para testar diferentes cenários de encerramento de chamada.
+    * Refinamento do fluxo de registro de ticket para torná-lo mais detalhado e realista.
+    * Múltiplos ajustes de grafia e pontuação nos diálogos para maior profissionalismo.
+
+### **v1.01** - (03/08/2025)
+* **UI/UX:**
+    * Criação de uma nova tela inicial com design mais moderno.
     * Adição de um indicador de "loading" antes da exibição do feedback final.
     * Melhora na lógica de exibição dos botões "Rever Atendimento" e "Simular Novamente".
 * **Fluxo de Conversa:**
-    * Adição de múltiplas novas ramificações de diálogo para testar diferentes cenários de encerramento.
-    * Refinamento do fluxo de registro de ticket para torná-lo mais detalhado e realista.
-    * Ajustes de grafia e pausas para tornar a conversa mais natural.
+    * Adição de múltiplas novas ramificações de diálogo para testar diferentes cenários.
+    * Ajustes de pausas para tornar a conversa mais natural.
 * **Pontuação e Feedback:**
     * Implementação de um sistema de pontuação de 0 a 100, com pesos diferentes para cada etapa.
     * Melhora na lógica de feedback para penalizar corretamente as etapas puladas.
 
-### **v1.00** - (Data da criação)
+### **v1.00** - (03/08/2025)
 * Lançamento inicial do simulador de atendimento.
 * Funcionalidades principais: fluxo de chat interativo, sistema de pontuação e feedback de desempenho.
 
